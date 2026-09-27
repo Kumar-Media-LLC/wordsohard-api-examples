@@ -13,4 +13,4 @@ BAD  OREO
 ...
 ```
 
-Brand names, proper nouns, and multi-word phrases show as BAD because the word list does not include them. That is often fine in a crossword; the flag is a prompt to double-check, not a verdict. Requests run one at a time to stay within fair use.
+Brand names, proper nouns, and multi-word phrases show as BAD because the word list does not include them. That is often fine in a crossword; the flag is a prompt to double-check, not a verdict. It checks entries 20 at a time with `/check`, then fetches definitions only for the entries that passed.

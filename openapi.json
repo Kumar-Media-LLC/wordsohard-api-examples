@@ -1,10 +1,10 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "WordSoHard Word Game Dictionary API",
-    "version": "1.0.0",
-    "summary": "Definition, Scrabble validity, and tile score for any word in one call.",
-    "description": "A free, keyless, CORS-enabled dictionary API built for word games. Each lookup returns an original WordSoHard definition plus word-game data: whether the word is playable in the WordSoHard Word List (about 257,000 words), its base Scrabble tile score, and whether it is a bingo (7+ tiles). Free for personal and commercial use with attribution to wordsohard.com. Fair use: roughly 60 requests per minute per IP.",
+    "title": "WordSoHard Word Game API",
+    "version": "1.1.0",
+    "summary": "Definitions, a batch Scrabble word checker, and an unscrambler with blank tiles.",
+    "description": "A free, keyless, CORS-enabled API built for word games. Three read-only endpoints: define (an original WordSoHard definition plus Scrabble validity and tile score), check (validate up to 20 words in one call, for checking a whole play), and unscramble (every playable word from a rack, with blank tiles scored as zero, plus full-length anagrams). Validity comes from the WordSoHard Word List, about 257,000 words from public-domain sources. Free for personal and commercial use with attribution to wordsohard.com. Fair use: roughly 60 requests per minute per IP.",
     "termsOfService": "https://wordsohard.com/terms",
     "contact": {
       "name": "WordSoHard",
@@ -22,13 +22,15 @@
   },
   "security": [],
   "servers": [
-    { "url": "https://wordsohard.com/api/v1" }
+    {
+      "url": "https://wordsohard.com/api/v1"
+    }
   ],
   "paths": {
     "/define/{word}": {
       "get": {
         "operationId": "defineWord",
-        "summary": "Look up a word",
+        "summary": "Define a word",
         "description": "Returns the definition, Scrabble validity, and base tile score for a word. Words without a definition return HTTP 200 with found set to false, so callers never need to handle a 404. The scrabble object is always present.",
         "parameters": [
           {
@@ -36,7 +38,12 @@
             "in": "path",
             "required": true,
             "description": "The word to look up, 2-30 letters. Input is lowercased and stripped of anything outside a-z.",
-            "schema": { "type": "string", "minLength": 2, "maxLength": 30, "pattern": "^[A-Za-z]+$" },
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 30,
+              "pattern": "^[A-Za-z]+$"
+            },
             "example": "serendipity"
           }
         ],
@@ -46,12 +53,16 @@
             "headers": {
               "Cache-Control": {
                 "description": "Found words are cacheable for a day in the browser; misses for five minutes.",
-                "schema": { "type": "string" }
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Definition" },
+                "schema": {
+                  "$ref": "#/components/schemas/Definition"
+                },
                 "examples": {
                   "found": {
                     "summary": "A word with a definition",
@@ -66,7 +77,11 @@
                           "definition": "The faculty of making fortunate discoveries by accident or luck."
                         }
                       ],
-                      "scrabble": { "valid": true, "score": 17, "bingo": true },
+                      "scrabble": {
+                        "valid": true,
+                        "score": 17,
+                        "bingo": true
+                      },
                       "source": "wordsohard",
                       "attribution": "Definitions by WordSoHard (https://wordsohard.com)",
                       "license": "Free to use with attribution to wordsohard.com"
@@ -78,7 +93,11 @@
                       "word": "xyzzy",
                       "found": false,
                       "definitions": [],
-                      "scrabble": { "valid": false, "score": 36, "bingo": false },
+                      "scrabble": {
+                        "valid": false,
+                        "score": 36,
+                        "bingo": false
+                      },
                       "source": "wordsohard",
                       "attribution": "Definitions by WordSoHard (https://wordsohard.com)",
                       "license": "Free to use with attribution to wordsohard.com"
@@ -92,8 +111,203 @@
             "description": "The word is shorter than 2 or longer than 30 letters after normalization.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" },
-                "example": { "word": "a", "error": "Word must be 2-30 letters (a-z only)." }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "word": "a",
+                  "error": "Word must be 2-30 letters (a-z only)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check/{words}": {
+      "get": {
+        "operationId": "checkWords",
+        "summary": "Check words (Scrabble word checker)",
+        "description": "Validates up to 20 comma-separated words in one request, in input order. Use it to check a whole play: the main word plus every cross-word it forms.",
+        "parameters": [
+          {
+            "name": "words",
+            "in": "path",
+            "required": true,
+            "description": "1-20 words separated by commas, each 2-30 letters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "qi,za,xyzzy"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One result per word.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckResponse"
+                },
+                "example": {
+                  "count": 3,
+                  "allValid": false,
+                  "results": [
+                    {
+                      "word": "qi",
+                      "valid": true,
+                      "score": 11,
+                      "length": 2,
+                      "bingo": false,
+                      "url": "https://wordsohard.com/word/qi"
+                    },
+                    {
+                      "word": "za",
+                      "valid": true,
+                      "score": 11,
+                      "length": 2,
+                      "bingo": false,
+                      "url": "https://wordsohard.com/word/za"
+                    },
+                    {
+                      "word": "xyzzy",
+                      "valid": false,
+                      "score": 36,
+                      "length": 5,
+                      "bingo": false
+                    }
+                  ],
+                  "attribution": "Word data by WordSoHard (https://wordsohard.com)",
+                  "license": "Free to use with attribution to wordsohard.com"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "At most 20 words per request."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unscramble/{letters}": {
+      "get": {
+        "operationId": "unscrambleLetters",
+        "summary": "Unscramble letters (anagram solver)",
+        "description": "Every word playable from a rack, plus its full-length anagrams. Use _ or * for a blank tile. Racks can be up to 12 tiles with no blanks, 10 with one blank, and 8 with two.",
+        "parameters": [
+          {
+            "name": "letters",
+            "in": "path",
+            "required": true,
+            "description": "The rack: a-z plus up to 2 blanks (_ or *).",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z_*]{2,12}$"
+            },
+            "example": "quz_"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "length (longest first, then A-Z) or score (highest first).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "length",
+                "score"
+              ],
+              "default": "length"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Max words returned. count always reports the full total.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "name": "minLength",
+            "in": "query",
+            "required": false,
+            "description": "Shortest word to include.",
+            "schema": {
+              "type": "integer",
+              "minimum": 2,
+              "default": 2
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Playable words from the rack.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnscrambleResponse"
+                },
+                "example": {
+                  "letters": "quz_",
+                  "tiles": 4,
+                  "blanks": 1,
+                  "count": 26,
+                  "returned": 3,
+                  "truncated": true,
+                  "sort": "score",
+                  "anagrams": [
+                    "quiz"
+                  ],
+                  "words": [
+                    {
+                      "word": "quiz",
+                      "length": 4,
+                      "score": 21
+                    },
+                    {
+                      "word": "cuz",
+                      "length": 3,
+                      "score": 11
+                    },
+                    {
+                      "word": "luz",
+                      "length": 3,
+                      "score": 11
+                    }
+                  ],
+                  "url": "https://wordsohard.com/unscramble/quz_",
+                  "attribution": "Word data by WordSoHard (https://wordsohard.com)",
+                  "license": "Free to use with attribution to wordsohard.com"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "letters": "abcdefg__",
+                  "error": "Rack must be 2-8 tiles with 2 blanks."
+                }
               }
             }
           }
@@ -105,50 +319,295 @@
     "schemas": {
       "Definition": {
         "type": "object",
-        "required": ["word", "found", "definitions", "scrabble", "source", "attribution", "license"],
+        "required": [
+          "word",
+          "found",
+          "definitions",
+          "scrabble",
+          "source",
+          "attribution",
+          "license"
+        ],
         "properties": {
-          "word": { "type": "string", "description": "The normalized word that was looked up." },
-          "found": { "type": "boolean", "description": "Whether a definition exists for this word." },
-          "lemma": { "type": "string", "description": "Base form, when the word is an inflection (for example, cats -> cat)." },
-          "phonetic": { "type": "string", "description": "IPA pronunciation, when available." },
-          "partOfSpeech": { "type": "string", "description": "Part of speech of the primary sense." },
+          "word": {
+            "type": "string",
+            "description": "The normalized word that was looked up."
+          },
+          "found": {
+            "type": "boolean",
+            "description": "Whether a definition exists for this word."
+          },
+          "lemma": {
+            "type": "string",
+            "description": "Base form, when the word is an inflection (for example, cats -> cat)."
+          },
+          "phonetic": {
+            "type": "string",
+            "description": "IPA pronunciation, when available."
+          },
+          "partOfSpeech": {
+            "type": "string",
+            "description": "Part of speech of the primary sense."
+          },
           "definitions": {
             "type": "array",
             "description": "One entry per sense. Empty when found is false.",
-            "items": { "$ref": "#/components/schemas/Sense" }
+            "items": {
+              "$ref": "#/components/schemas/Sense"
+            }
           },
-          "example": { "type": "string", "description": "Example sentence, when available." },
-          "scrabble": { "$ref": "#/components/schemas/Scrabble" },
-          "source": { "type": "string", "const": "wordsohard", "description": "Always wordsohard: original WordSoHard definitions." },
-          "attribution": { "type": "string", "description": "Credit line to display next to the definitions." },
-          "license": { "type": "string", "description": "Usage terms: free with attribution." }
+          "example": {
+            "type": "string",
+            "description": "Example sentence, when available."
+          },
+          "scrabble": {
+            "$ref": "#/components/schemas/Scrabble"
+          },
+          "source": {
+            "type": "string",
+            "const": "wordsohard",
+            "description": "Always wordsohard: original WordSoHard definitions."
+          },
+          "attribution": {
+            "type": "string",
+            "description": "Credit line to display next to the definitions."
+          },
+          "license": {
+            "type": "string",
+            "description": "Usage terms: free with attribution."
+          }
         }
       },
       "Sense": {
         "type": "object",
-        "required": ["definition"],
+        "required": [
+          "definition"
+        ],
         "properties": {
-          "partOfSpeech": { "type": "string" },
-          "definition": { "type": "string" },
-          "register": { "type": "string", "description": "Usage label such as informal, archaic, or offensive, when one applies." }
+          "partOfSpeech": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "register": {
+            "type": "string",
+            "description": "Usage label such as informal, archaic, or offensive, when one applies."
+          }
         }
       },
       "Scrabble": {
         "type": "object",
-        "required": ["valid", "score", "bingo"],
+        "required": [
+          "valid",
+          "score",
+          "bingo"
+        ],
         "properties": {
-          "valid": { "type": "boolean", "description": "Whether the word is playable in the WordSoHard Word List." },
-          "score": { "type": "integer", "description": "Base Scrabble tile score, without premium squares." },
-          "bingo": { "type": "boolean", "description": "True if the word uses 7 or more tiles." }
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the word is playable in the WordSoHard Word List."
+          },
+          "score": {
+            "type": "integer",
+            "description": "Base Scrabble tile score, without premium squares."
+          },
+          "bingo": {
+            "type": "boolean",
+            "description": "True if the word uses 7 or more tiles."
+          }
         }
       },
       "Error": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "word": { "type": "string" },
-          "error": { "type": "string" }
+          "word": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "letters": {
+            "type": "string",
+            "description": "The normalized rack, on unscramble errors."
+          }
         }
+      },
+      "Attribution": {
+        "type": "object",
+        "required": [
+          "attribution",
+          "license"
+        ],
+        "properties": {
+          "attribution": {
+            "type": "string",
+            "description": "Credit line to display wherever the data appears."
+          },
+          "license": {
+            "type": "string",
+            "description": "Usage terms: free with attribution."
+          }
+        }
+      },
+      "CheckResult": {
+        "type": "object",
+        "required": [
+          "word",
+          "valid"
+        ],
+        "properties": {
+          "word": {
+            "type": "string",
+            "description": "The normalized word (lowercase a-z)."
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the word is playable in the WordSoHard Word List."
+          },
+          "score": {
+            "type": "integer",
+            "description": "Base tile score, no premium squares. Absent when error is present."
+          },
+          "length": {
+            "type": "integer"
+          },
+          "bingo": {
+            "type": "boolean",
+            "description": "True if the word uses 7 or more tiles."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The word's WordSoHard page. Present only for valid words."
+          },
+          "error": {
+            "type": "string",
+            "description": "Present when this entry is not 2-30 letters."
+          }
+        }
+      },
+      "CheckResponse": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "count",
+              "allValid",
+              "results"
+            ],
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "allValid": {
+                "type": "boolean",
+                "description": "True only if every word is valid."
+              },
+              "results": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CheckResult"
+                }
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/Attribution"
+          }
+        ]
+      },
+      "RackWord": {
+        "type": "object",
+        "required": [
+          "word",
+          "length",
+          "score"
+        ],
+        "properties": {
+          "word": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "score": {
+            "type": "integer",
+            "description": "Tile score from this rack, with blanks scored as zero."
+          }
+        }
+      },
+      "UnscrambleResponse": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "letters",
+              "tiles",
+              "blanks",
+              "count",
+              "returned",
+              "truncated",
+              "sort",
+              "anagrams",
+              "words",
+              "url"
+            ],
+            "properties": {
+              "letters": {
+                "type": "string",
+                "description": "The rack, normalized: sorted letters, then one _ per blank."
+              },
+              "tiles": {
+                "type": "integer"
+              },
+              "blanks": {
+                "type": "integer"
+              },
+              "count": {
+                "type": "integer",
+                "description": "Total playable words, before limit."
+              },
+              "returned": {
+                "type": "integer"
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "sort": {
+                "type": "string",
+                "enum": [
+                  "length",
+                  "score"
+                ]
+              },
+              "anagrams": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Words that use every tile, A-Z. Not affected by limit."
+              },
+              "words": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RackWord"
+                }
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The same rack on the WordSoHard unscrambler."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/Attribution"
+          }
+        ]
       }
     }
   }

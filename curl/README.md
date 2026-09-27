@@ -19,6 +19,25 @@ curl -s https://wordsohard.com/api/v1/define/zax \
 curl -s https://wordsohard.com/api/v1/define/qi | jq -e '.scrabble.valid' > /dev/null && echo yes || echo no
 ```
 
+**Check a whole play at once** (main word plus cross-words):
+
+```bash
+curl -s https://wordsohard.com/api/v1/check/quiz,qi,za | jq '.allValid'
+```
+
+**Best plays from a rack** (`_` is a blank tile):
+
+```bash
+curl -s "https://wordsohard.com/api/v1/unscramble/aeinst_?sort=score&limit=10" \
+  | jq -r '.words[] | "\(.word) \(.score)"'
+```
+
+**Every full-rack anagram:**
+
+```bash
+curl -s https://wordsohard.com/api/v1/unscramble/retains | jq -r '.anagrams | join(", ")'
+```
+
 **A shell function for your `.zshrc` or `.bashrc`:**
 
 ```bash
