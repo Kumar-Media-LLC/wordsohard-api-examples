@@ -45,7 +45,7 @@ No API key, no signup, no SDK. Any HTTP client works.
 - **Misses are not errors:** a word we do not have returns HTTP 200 with `"found": false`. The `scrabble` object is always present, so validity and score work for any input.
 - **Score:** `scrabble.score` is the base tile sum. Premium squares depend on the board, so apply them in your own game logic.
 - **Dictionary:** validity comes from the WordSoHard Word List, about 257,000 words from public-domain sources. It is not the official Collins or NASPA tournament list.
-- **Spec:** an OpenAPI 3.1 description lives at [wordsohard.com/openapi.json](https://wordsohard.com/openapi.json). Import it into Postman or Insomnia, or generate a typed client.
+- **Spec:** an OpenAPI 3.1 description lives at [wordsohard.com/openapi.json](https://wordsohard.com/openapi.json), mirrored in this repo as [`openapi.json`](openapi.json). Import it into Postman or Insomnia, or generate a typed client.
 - **Fair use:** please stay under roughly 60 requests per minute per IP, and cache results you reuse.
 
 ## Attribution

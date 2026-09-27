@@ -1,0 +1,155 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "WordSoHard Word Game Dictionary API",
+    "version": "1.0.0",
+    "summary": "Definition, Scrabble validity, and tile score for any word in one call.",
+    "description": "A free, keyless, CORS-enabled dictionary API built for word games. Each lookup returns an original WordSoHard definition plus word-game data: whether the word is playable in the WordSoHard Word List (about 257,000 words), its base Scrabble tile score, and whether it is a bingo (7+ tiles). Free for personal and commercial use with attribution to wordsohard.com. Fair use: roughly 60 requests per minute per IP.",
+    "termsOfService": "https://wordsohard.com/terms",
+    "contact": {
+      "name": "WordSoHard",
+      "url": "https://wordsohard.com/api",
+      "email": "hello@wordsohard.com"
+    },
+    "license": {
+      "name": "Free to use with attribution to wordsohard.com",
+      "url": "https://wordsohard.com/api#attribution"
+    }
+  },
+  "externalDocs": {
+    "description": "Human-readable docs, live try-it box, and use-case examples",
+    "url": "https://wordsohard.com/api"
+  },
+  "security": [],
+  "servers": [
+    { "url": "https://wordsohard.com/api/v1" }
+  ],
+  "paths": {
+    "/define/{word}": {
+      "get": {
+        "operationId": "defineWord",
+        "summary": "Look up a word",
+        "description": "Returns the definition, Scrabble validity, and base tile score for a word. Words without a definition return HTTP 200 with found set to false, so callers never need to handle a 404. The scrabble object is always present.",
+        "parameters": [
+          {
+            "name": "word",
+            "in": "path",
+            "required": true,
+            "description": "The word to look up, 2-30 letters. Input is lowercased and stripped of anything outside a-z.",
+            "schema": { "type": "string", "minLength": 2, "maxLength": 30, "pattern": "^[A-Za-z]+$" },
+            "example": "serendipity"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lookup result. Check found to see whether a definition exists.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Found words are cacheable for a day in the browser; misses for five minutes.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Definition" },
+                "examples": {
+                  "found": {
+                    "summary": "A word with a definition",
+                    "value": {
+                      "word": "serendipity",
+                      "found": true,
+                      "phonetic": "/sɛɹəndˈɪpɪti/",
+                      "partOfSpeech": "noun",
+                      "definitions": [
+                        {
+                          "partOfSpeech": "noun",
+                          "definition": "The faculty of making fortunate discoveries by accident or luck."
+                        }
+                      ],
+                      "scrabble": { "valid": true, "score": 17, "bingo": true },
+                      "source": "wordsohard",
+                      "attribution": "Definitions by WordSoHard (https://wordsohard.com)",
+                      "license": "Free to use with attribution to wordsohard.com"
+                    }
+                  },
+                  "notFound": {
+                    "summary": "A word we do not have",
+                    "value": {
+                      "word": "xyzzy",
+                      "found": false,
+                      "definitions": [],
+                      "scrabble": { "valid": false, "score": 36, "bingo": false },
+                      "source": "wordsohard",
+                      "attribution": "Definitions by WordSoHard (https://wordsohard.com)",
+                      "license": "Free to use with attribution to wordsohard.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The word is shorter than 2 or longer than 30 letters after normalization.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "example": { "word": "a", "error": "Word must be 2-30 letters (a-z only)." }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Definition": {
+        "type": "object",
+        "required": ["word", "found", "definitions", "scrabble", "source", "attribution", "license"],
+        "properties": {
+          "word": { "type": "string", "description": "The normalized word that was looked up." },
+          "found": { "type": "boolean", "description": "Whether a definition exists for this word." },
+          "lemma": { "type": "string", "description": "Base form, when the word is an inflection (for example, cats -> cat)." },
+          "phonetic": { "type": "string", "description": "IPA pronunciation, when available." },
+          "partOfSpeech": { "type": "string", "description": "Part of speech of the primary sense." },
+          "definitions": {
+            "type": "array",
+            "description": "One entry per sense. Empty when found is false.",
+            "items": { "$ref": "#/components/schemas/Sense" }
+          },
+          "example": { "type": "string", "description": "Example sentence, when available." },
+          "scrabble": { "$ref": "#/components/schemas/Scrabble" },
+          "source": { "type": "string", "const": "wordsohard", "description": "Always wordsohard: original WordSoHard definitions." },
+          "attribution": { "type": "string", "description": "Credit line to display next to the definitions." },
+          "license": { "type": "string", "description": "Usage terms: free with attribution." }
+        }
+      },
+      "Sense": {
+        "type": "object",
+        "required": ["definition"],
+        "properties": {
+          "partOfSpeech": { "type": "string" },
+          "definition": { "type": "string" },
+          "register": { "type": "string", "description": "Usage label such as informal, archaic, or offensive, when one applies." }
+        }
+      },
+      "Scrabble": {
+        "type": "object",
+        "required": ["valid", "score", "bingo"],
+        "properties": {
+          "valid": { "type": "boolean", "description": "Whether the word is playable in the WordSoHard Word List." },
+          "score": { "type": "integer", "description": "Base Scrabble tile score, without premium squares." },
+          "bingo": { "type": "boolean", "description": "True if the word uses 7 or more tiles." }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "word": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}
